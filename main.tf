@@ -1,24 +1,25 @@
-provider "aws"{
-    region = "us-east-1"
+provider "aws" {
+  region = "us-east-1"
 }
 
 #create VPC
-resource "aws_vpc" "static_vpc"{
+resource "aws_vpc" "static_vpc" {
   cidr_block = "10.0.0.0/16"
   enable_dns_support = true
   enable_dns_hostnames = true
 }
 
 #create public subnet 1
-resource "aws_subnet" "public_subnet"{
+resource "aws_subnet" "public_subnet" { 
   vpc_id                  = aws_vpc.static_vpc.id
   cidr_block              = "10.0.0.0/24" 
-  availability_zone      = "us-east-1a"  
+  availability_zone      = "us-east-1a" 
   map_public_ip_on_launch = true
   tags = {
     Name = "Static Subnet1"
   }
 }
+
 
 # Create a security group
 resource "aws_security_group" "staticSG" {
@@ -46,6 +47,15 @@ resource "aws_security_group" "staticSG" {
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+  
 }
 
 #createKeyPair
@@ -55,6 +65,7 @@ resource "aws_key_pair" "my_key_pair" {
 }
 
 
+# Create AWS instance
 # Create AWS instance
 resource "aws_instance" "staticInstance" {
   ami           = "ami-053b0d53c279acc90"
@@ -67,7 +78,28 @@ resource "aws_instance" "staticInstance" {
   tags = {
     Name = "staticWebsiteInstance"
   }
+  
+  # connection {
+  #   type        = "ssh"
+  #   user        = "ubuntu"
+  #   private_key = file("~/.ssh/id_rsa")
+  #   host        = self.public_ip
+  # }
+  
+  # provisioner "remote-exec" {
+  #   inline = [
+  #     "sudo apt update",
+  #     "sudo apt install -y apache2",
+  #     "sudo systemctl start apache2",
+  #     "sudo systemctl enable apache2",
+  #     "sudo rm -rf /var/www/html/*",  # Remove default Apache files
+  #     "wget https://www.tooplate.com/zip-templates/2137_barista_cafe.zip",
+  #     "unzip -d /var/www/html/ 2137_barista_cafe.zip",
+  #     "sudo mv /var/www/html/2137_barista_cafe/* /var/www/html/",  # Move extracted files
+  #   ]
+  # }
 }
+
 resource "aws_internet_gateway" "my_igw" {
   vpc_id = aws_vpc.static_vpc.id
 }
